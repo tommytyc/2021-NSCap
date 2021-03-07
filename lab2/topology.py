@@ -74,18 +74,41 @@ def topology():
     killDHCP(net)
 
     net.stop()
-
+# 01111110
 def config(hosts, switches, routers, DHCPServer):
     # Hosts interface IP and  default gateway configuration
-    DHCPServer.cmd('ifconfig DHCPServer-eth0 [IP/prefix]')
-    hosts['h2'].cmd('ifconfig h2-eth0 [IP/prefix]')
-    hosts['h2'].cmd('route add default gw [gatewayIP]')
+    DHCPServer.cmd('ifconfig DHCPServer-eth0 192.168.1.4/26')
+    hosts['h2'].cmd('ifconfig h2-eth0 192.168.1.65/26')
+    hosts['h2'].cmd('route add default gw 192.168.1.126')
+    hosts['h3'].cmd('ifconfig h3-eth0 192.168.1.66/26')
+    hosts['h3'].cmd('route add default gw 192.168.1.126')
+    hosts['h4'].cmd('ifconfig h4-eth0 192.168.3.1/24')
+    hosts['h4'].cmd('route add default gw 192.168.3.254')
+    hosts['h5'].cmd('ifconfig h5-eth0 192.168.3.2/24')
+    hosts['h5'].cmd('route add default gw 192.168.3.254')
     # ...
     #Routers interface IP configuration
-    routers['r1'].cmd('ifconfig r1-eth0 [IP/prefix]')
+    routers['r1'].cmd('ifconfig r1-eth0 10.0.1.2/24')
+    routers['r1'].cmd('ifconfig r1-eth1 192.168.1.0/26')
+    routers['r1'].cmd('ifconfig r1-eth2 192.168.1.126/26')
+    routers['r2'].cmd('ifconfig r2-eth0 10.0.0.1/24')
+    routers['r2'].cmd('ifconfig r2-eth1 10.0.1.1/24')
+    routers['r3'].cmd('ifconfig r3-eth0 10.0.0.2/24')
+    routers['r3'].cmd('ifconfig r3-eth1 10.0.2.1/24')
+    routers['r4'].cmd('ifconfig r4-eth0 10.0.2.3/24')
+    routers['r4'].cmd('ifconfig r4-eth1 192.168.3.254/24')
     # ...
     # Router routing table configuration
-    routers['r1'].cmd('route add -net [networkID/prefix] gw [peer IP]')
+    routers['r1'].cmd('route add -net 192.168.3.0/24 gw 10.0.1.1')
+    routers['r2'].cmd('route add -net 192.168.3.0/24 gw 10.0.0.2')
+    routers['r3'].cmd('route add -net 192.168.3.0/24 gw 10.0.2.3')
+
+    routers['r4'].cmd('route add -net 192.168.1.64/26 gw 10.0.2.1')
+    routers['r4'].cmd('route add -net 192.168.1.0/26 gw 10.0.2.1')
+    routers['r3'].cmd('route add -net 192.168.1.64/26 gw 10.0.0.1')
+    routers['r3'].cmd('route add -net 192.168.1.0/26 gw 10.0.0.1')
+    routers['r2'].cmd('route add -net 192.168.1.64/26 gw 10.0.1.2')
+    routers['r2'].cmd('route add -net 192.168.1.0/26 gw 10.0.1.2')
     # ...
 
 def check(hosts):
