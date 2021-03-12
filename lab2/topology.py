@@ -62,7 +62,7 @@ def topology():
     config(hosts, switches, routers, DHCPServer)
 
     # Run DHCP server at node DHCPserver
-    #runDHCP(net) # if your dhcpd.conf is done, uncomment this line 
+    runDHCP(net) # if your dhcpd.conf is done, uncomment this line 
 
     check(hosts)
 
@@ -74,10 +74,11 @@ def topology():
     killDHCP(net)
 
     net.stop()
-# 01111110
+
 def config(hosts, switches, routers, DHCPServer):
     # Hosts interface IP and  default gateway configuration
     DHCPServer.cmd('ifconfig DHCPServer-eth0 192.168.1.4/26')
+    hosts['h1'].cmd('ifconfig h1-eth0 0')
     hosts['h2'].cmd('ifconfig h2-eth0 192.168.1.65/26')
     hosts['h2'].cmd('route add default gw 192.168.1.126')
     hosts['h3'].cmd('ifconfig h3-eth0 192.168.1.66/26')
@@ -89,7 +90,7 @@ def config(hosts, switches, routers, DHCPServer):
     # ...
     #Routers interface IP configuration
     routers['r1'].cmd('ifconfig r1-eth0 10.0.1.2/24')
-    routers['r1'].cmd('ifconfig r1-eth1 192.168.1.0/26')
+    routers['r1'].cmd('ifconfig r1-eth1 192.168.1.62/26')
     routers['r1'].cmd('ifconfig r1-eth2 192.168.1.126/26')
     routers['r2'].cmd('ifconfig r2-eth0 10.0.0.1/24')
     routers['r2'].cmd('ifconfig r2-eth1 10.0.1.1/24')
