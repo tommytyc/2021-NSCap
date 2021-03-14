@@ -110,6 +110,17 @@ def config(hosts, switches, routers, DHCPServer):
     routers['r3'].cmd('route add -net 192.168.1.0/26 gw 10.0.0.1')
     routers['r2'].cmd('route add -net 192.168.1.64/26 gw 10.0.1.2')
     routers['r2'].cmd('route add -net 192.168.1.0/26 gw 10.0.1.2')
+
+    # Rule for TTL exceeds ICMP messages from each router
+    routers['r1'].cmd('route add -net 10.0.0.0/24 gw 10.0.1.1')
+    routers['r1'].cmd('route add -net 10.0.2.0/24 gw 10.0.1.1')
+    routers['r2'].cmd('route add -net 10.0.0.0/24 gw 10.0.0.2')
+    routers['r2'].cmd('route add -net 10.0.2.0/24 gw 10.0.0.2')
+    routers['r3'].cmd('route add -net 10.0.2.0/24 gw 10.0.2.3')
+    routers['r3'].cmd('route add -net 10.0.1.0/24 gw 10.0.0.1')
+    routers['r4'].cmd('route add -net 10.0.2.0/24 gw 10.0.2.1')
+    routers['r4'].cmd('route add -net 10.0.0.0/24 gw 10.0.2.1')
+    routers['r4'].cmd('route add -net 10.0.1.0/24 gw 10.0.2.1')
     # ...
 
 def check(hosts):
