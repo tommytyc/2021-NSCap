@@ -65,7 +65,7 @@ def topology():
     net.stop()
 
 def config(routers, h2, h3, h4, DHCPServer):
-    DHCPServer.cmd('ifconfig DHCPServer-eth0 192.168.1.4/24')
+    DHCPServer.cmd('ifconfig DHCPServer-eth0 192.168.1.4/26')
     h2.cmd('route add default gw 192.168.1.126')
     h3.cmd('route add default gw 192.168.1.126')
     h4.cmd('route add default gw 140.114.0.2')
@@ -90,6 +90,11 @@ def runBGP(routers):
     routers['r3'].cmd('bgpd -f ./configs/bgp_r3.conf -d -i /var/run/quagga/bgpdr3.pid')
     routers['r4'].cmd('zebra -f ./configs/zebra.conf -d -i /var/run/quagga/zebrar4.pid')
     routers['r4'].cmd('bgpd -f ./configs/bgp_r4.conf -d -i /var/run/quagga/bgpdr4.pid')
+
+    # config nat function
+    routers['r1'].cmd('r1 iptables -t nat -A POSTROUTING -s 192.168.1.0/26 -o r1-eth0 -j SNAT --to-source 140.113.0.30')
+    routers['r1'].cmd('r1 iptables -t nat -A POSTROUTING -s 192.168.1.64/26 -o r1-eth0 -j SNAT --to-source 140.113.0.40')
+    routers['r1'].cmd('r1 iptables -t nat -A PREROUTING -p tcp --dport 80 -j DNAT --to-destination 192.168.1.66:8000')
 
 def killBGP():
     print("[-] Killing BGP")
