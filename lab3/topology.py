@@ -57,11 +57,11 @@ def topology():
 
     net.start()
     config(routers, h2, h3, h4, DHCPServer)
-    #runBGP(routers)
-    #runDHCP(net) # if your dhcpd.conf is done, uncomment this line 
+    runBGP(routers)
+    runDHCP(net) # if your dhcpd.conf is done, uncomment this line 
     CLI(net)
-    #killDHCP(net) # don't leave dhcp process 
-    #killBGP() #dont leave bgp process
+    killDHCP(net) # don't leave dhcp process 
+    killBGP() #dont leave bgp process
     net.stop()
 
 def config(routers, h2, h3, h4, DHCPServer):
