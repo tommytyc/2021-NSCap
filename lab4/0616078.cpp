@@ -19,33 +19,46 @@ using namespace std;
 bool brgr0 = 0;
 
 typedef struct PKT_INFO{
-    char out_src_mac_addr[MAC_LEN];
-    char out_dst_mac_addr[MAC_LEN];
-    char in_src_mac_addr[MAC_LEN];
-    char in_dst_mac_addr[MAC_LEN];
+    string out_src_mac_addr;
+    string in_src_mac_addr;
+    string out_dst_mac_addr;
+    string in_dst_mac_addr;
     char src_ip_addr[INET_ADDRSTRLEN];
     char dst_ip_addr[INET_ADDRSTRLEN];
     u_char ip_next;
+    u_int16_t in_eth_next;
+    u_int16_t out_eth_next;
+    u_int16_t gre_proto;
 } pkt_info;
+
+struct GRE_HDR{
+    u_int16_t gre_garbage;
+    u_int16_t gre_proto;
+};
 
 bool dump_content(const u_char* content, pkt_info *info)
 {
     pkt_info tmp_info;
-    struct ether_header* eth_hdr  = (struct ether_header*)content;
+    struct ether_header* out_eth_hdr  = (struct ether_header*)content;
     char mac[MAC_LEN];
-    snprintf(mac, sizeof(mac), "%02x:%02x:%02x:%02x:%02x:%02x", eth_hdr->ether_shost[0], eth_hdr->ether_shost[1], eth_hdr->ether_shost[2], eth_hdr->ether_shost[3], eth_hdr->ether_shost[4], eth_hdr->ether_shost[5]);
-    strcpy(tmp_info.out_src_mac_addr, mac);
-    snprintf(mac, sizeof(mac), "%02x:%02x:%02x:%02x:%02x:%02x", eth_hdr->ether_dhost[0], eth_hdr->ether_dhost[1], eth_hdr->ether_dhost[2], eth_hdr->ether_dhost[3], eth_hdr->ether_dhost[4], eth_hdr->ether_dhost[5]);
-    strcpy(tmp_info.out_dst_mac_addr, mac);
-    u_int16_t eth_next = ntohs(eth_hdr->ether_type);
-    if(eth_next == ETHERTYPE_IP)
+    tmp_info.out_src_mac_addr = string(ether_ntoa((const struct ether_addr *)&out_eth_hdr->ether_shost));
+    tmp_info.out_dst_mac_addr = string(ether_ntoa((const struct ether_addr *)&out_eth_hdr->ether_dhost));
+    tmp_info.out_eth_next = ntohs(out_eth_hdr->ether_type);
+    if(tmp_info.out_eth_next == ETHERTYPE_IP)
     {
         struct ip* ip_hdr = (struct ip*)(content + MAC_LEN);
         inet_ntop(AF_INET, &ip_hdr->ip_src, tmp_info.src_ip_addr, sizeof(tmp_info.src_ip_addr));
         inet_ntop(AF_INET, &ip_hdr->ip_dst, tmp_info.dst_ip_addr, sizeof(tmp_info.dst_ip_addr));
         tmp_info.ip_next = ip_hdr->ip_p;
+        unsigned int ip_total_len = ip_hdr->ip_hl << 2;
         if(tmp_info.ip_next == IPPROTO_GRE)
         {
+            struct ether_header* in_eth_hdr  = (struct ether_header*)(content + MAC_LEN + ip_total_len + 4);
+            tmp_info.in_src_mac_addr = string(ether_ntoa((const struct ether_addr *)&in_eth_hdr->ether_shost));
+            tmp_info.in_dst_mac_addr = string(ether_ntoa((const struct ether_addr *)&in_eth_hdr->ether_dhost));
+            tmp_info.in_eth_next = ntohs(in_eth_hdr->ether_type);
+            struct GRE_HDR* gre = (struct GRE_HDR*)(content + MAC_LEN + ip_total_len);
+            tmp_info.gre_proto = ntohs(gre->gre_proto);
             *info = tmp_info;
             return 1;
         }
@@ -72,14 +85,22 @@ void get_packet(int* id, pcap_pkthdr* hdr, const u_char * content, string* new_r
         }
         cout << dec << setfill(' ') << setw(0);
         cout << "\n" << endl;
-        cout << "Src MAC " << info.src_mac_addr << endl;
-        cout << "Dst MAC " << info.dst_mac_addr << endl;
-        cout << "Ethernet Type: IPv4" << endl;
+        cout << "Outer Ethernet:" << endl;
+        cout << "Src MAC " << info.out_src_mac_addr << endl;
+        cout << "Dst MAC " << info.out_dst_mac_addr << endl;
+        cout << "Ethernet Type: " << hex << info.out_eth_next << endl;
+        cout << dec;
         cout << "Src IP " << info.src_ip_addr << endl;
         cout << "Dst IP " << info.dst_ip_addr << endl;
-        cout << "Next Layer Protocol: GRE" << endl;
+        cout << "Next Layer Protocol: GRE\n" << endl;
+        cout << "GRE Protocol: " << hex << info.gre_proto << endl;
+        cout << dec;
+        cout << "Inner Ethernet:" << endl;
+        cout << "Src MAC " << info.in_src_mac_addr << endl;
+        cout << "Dst MAC " << info.in_dst_mac_addr << endl;
+        cout << "Ether Type: " << hex << info.in_eth_next << endl;
+        cout << dec;
         cout << "Tunnel Finish!\n" << endl;
-        *id = *id + 1;
         if(!brgr0)
         {
             system("ip link add br0 type bridge");
@@ -95,6 +116,7 @@ void get_packet(int* id, pcap_pkthdr* hdr, const u_char * content, string* new_r
         
         *new_rule = (*new_rule) + " and not host " + string(info.src_ip_addr);
         *new_rule_flag = 1;
+        *id = *id + 1;
     }
     new_rule_flag = 0;
 }
